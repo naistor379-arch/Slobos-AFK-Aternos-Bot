@@ -3,12 +3,12 @@
   "bot-account": {
     "username": "SloBoTT0",
     "password": "",
-    "type": "offline"
+    "type": "online"
   },
   "server": {
     "ip": "Gun2Death.aternos.me",
     "port": 47338,
-    "version": "",
+    "version": "1.26.21.1",
     "try-creative": false
   },
   "position": {
