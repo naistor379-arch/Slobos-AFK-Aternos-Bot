@@ -1,87 +1,349 @@
-{
-  "name": "AFK Bot",
-  "bot-account": {
-    "username": "SloBoTT0",
-    "password": "",
-    "type": "offline"
+const bedrock = require('bedrock-protocol')
+
+const config = {
+  bot: {
+    username: 'SloBoTT0',
+    offline: true
   },
-  "server": {
-    "ip": "Gun2Death.aternos.me",
-    "port": 47338,
-    "version": "",
-    "try-creative": false
+
+  server: {
+    host: 'Gun2Death.aternos.me',
+    port: 47338
   },
-  "position": {
-    "enabled": true,
-    "x": 0,
-    "y": 100,
-    "z": 0
+
+  reconnect: {
+    enabled: true,
+    delay: 5000,
+    maxDelay: 120000
   },
-  "utils": {
-    "auto-auth": {
-      "enabled": true,
-      "password": "chalol78"
-    },
-    "anti-afk": {
-      "enabled": true,
-      "sneak": true
-    },
-    "chat-messages": {
-      "enabled": true,
-      "repeat": true,
-      "repeat-delay": 120,
-      "messages": [
-        "I'm a regular player",
-        "Subscribe to Slobos!",
-        "I like to play Minecraft!"
-      ]
-    },
-    "chat-log": true,
-    "auto-reconnect": true,
-    "auto-reconnect-delay": 2000,
-    "max-reconnect-delay": 120000
+
+  autoAuth: {
+    enabled: true,
+    password: 'chalol78'
   },
-  "movement": {
-    "enabled": true,
-    "circle-walk": {
-      "enabled": true,
-      "radius": 4,
-      "speed": 3000
-    },
-    "look-around": {
-      "enabled": true,
-      "interval": 5000
-    },
-    "random-jump": {
-      "enabled": true,
-      "interval": 10000
-    }
+
+  antiAfk: {
+    enabled: true,
+    sneak: true,
+    jumpInterval: 10000,
+    lookInterval: 5000,
+    walkInterval: 3000
   },
-  "modules": {
-    "avoidMobs": true,
-    "combat": true,
-    "beds": false,
-    "chat": true,
-    "console-commands": true
+
+  chat: {
+    enabled: true,
+    repeat: true,
+    delay: 120000,
+    messages: [
+      "I'm a regular player",
+      "Subscribe to Slobos!",
+      "I like to play Minecraft!"
+    ]
   },
-  "combat": {
-    "attack-mobs": true,
-    "auto-eat": true
-  },
-  "beds": {
-    "pick-up-day": false,
-    "place-night": false
-  },
-  "discord": {
-    "enabled": false,
-    "webhookUrl": "YOUR_DISCORD_WEBHOOK_URL_HERE",
-    "events": {
-      "connect": true,
-      "disconnect": true,
-      "chat": false
-    }
-  },
-  "chat": {
-    "respond": true
+
+  modules: {
+    avoidMobs: true,
+    combat: true,
+    autoEat: true,
+    chatResponder: true,
+    consoleCommands: true
   }
 }
+
+function random(min, max) {
+  return Math.random() * (max - min) + min
+}
+
+function startBot() {
+  console.log('Starting Bedrock AFK Bot...')
+
+  const bot = bedrock.createClient({
+    host: config.server.host,
+    port: config.server.port,
+    username: config.bot.username,
+    offline: config.bot.offline
+  })
+
+  let connected = false
+
+  bot.on('join', () => {
+    connected = true
+    console.log('✅ Bot joined server')
+  })
+
+  bot.on('spawn', () => {
+    console.log('✅ Bot spawned')
+  })
+
+  bot.on('text', (packet) => {
+    try {
+      const msg = packet.message || ''
+
+      console.log('[CHAT]', msg)
+
+      // Auto auth
+      if (config.autoAuth.enabled) {
+        if (
+          msg.toLowerCase().includes('/register')
+        ) {
+          sendChat(`/register ${config.autoAuth.password} ${config.autoAuth.password}`)
+        }
+
+        if (
+          msg.toLowerCase().includes('/login')
+        ) {
+          sendChat(`/login ${config.autoAuth.password}`)
+        }
+      }
+
+      // Chat responder
+      if (config.modules.chatResponder) {
+        if (msg.toLowerCase().includes('hello')) {
+          sendChat('hi')
+        }
+
+        if (msg.toLowerCase().includes(config.bot.username.toLowerCase())) {
+          sendChat('yes?')
+        }
+      }
+
+    } catch (e) {
+      console.log(e)
+    }
+  })
+
+  bot.on('disconnect', () => {
+    connected = false
+
+    console.log('❌ Disconnected')
+
+    if (config.reconnect.enabled) {
+      console.log(`🔄 Reconnecting in ${config.reconnect.delay / 1000}s`)
+
+      setTimeout(() => {
+        startBot()
+      }, config.reconnect.delay)
+    }
+  })
+
+  bot.on('error', (err) => {
+    console.log('❌ Error:', err.message)
+  })
+
+  function sendChat(message) {
+    try {
+      bot.queue('text', {
+        type: 'chat',
+        needs_translation: false,
+        source_name: config.bot.username,
+        message: message,
+        xuid: '',
+        platform_chat_id: ''
+      })
+
+      console.log('💬 Sent:', message)
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
+  // Repeating chat messages
+  if (config.chat.enabled && config.chat.repeat) {
+    setInterval(() => {
+      if (!connected) return
+
+      try {
+        const messages = config.chat.messages
+
+        const msg =
+          messages[Math.floor(Math.random() * messages.length)]
+
+        sendChat(msg)
+
+      } catch (e) {
+        console.log(e)
+      }
+    }, config.chat.delay)
+  }
+
+  // Anti AFK jump
+  if (config.antiAfk.enabled) {
+    setInterval(() => {
+      if (!connected) return
+
+      try {
+        bot.queue('player_auth_input', {
+          pitch: random(-20, 20),
+          yaw: random(0, 360),
+
+          position: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+
+          moveVector: {
+            x: random(-1, 1),
+            z: random(-1, 1)
+          },
+
+          headYaw: random(0, 360),
+
+          inputData: {
+            jumpDown: true,
+            sneakDown: config.antiAfk.sneak
+          },
+
+          inputMode: 1,
+          playMode: 0,
+          tick: 0,
+
+          delta: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+
+          transaction: null,
+          itemUseTransaction: null,
+          itemStackRequest: null,
+          blockActions: []
+        })
+
+        console.log('🦘 Anti-AFK movement')
+
+      } catch (e) {
+        console.log(e)
+      }
+    }, config.antiAfk.jumpInterval)
+  }
+
+  // Look around
+  if (config.antiAfk.enabled) {
+    setInterval(() => {
+      if (!connected) return
+
+      try {
+        bot.queue('player_auth_input', {
+          pitch: random(-45, 45),
+          yaw: random(0, 360),
+
+          position: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+
+          moveVector: {
+            x: 0,
+            z: 0
+          },
+
+          headYaw: random(0, 360),
+
+          inputData: {},
+
+          inputMode: 1,
+          playMode: 0,
+          tick: 0,
+
+          delta: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+
+          transaction: null,
+          itemUseTransaction: null,
+          itemStackRequest: null,
+          blockActions: []
+        })
+
+        console.log('👀 Looking around')
+
+      } catch (e) {
+        console.log(e)
+      }
+    }, config.antiAfk.lookInterval)
+  }
+
+  // Circle/random walking
+  if (config.antiAfk.enabled) {
+    setInterval(() => {
+      if (!connected) return
+
+      try {
+        bot.queue('player_auth_input', {
+          pitch: 0,
+          yaw: random(0, 360),
+
+          position: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+
+          moveVector: {
+            x: random(-1, 1),
+            z: random(-1, 1)
+          },
+
+          headYaw: random(0, 360),
+
+          inputData: {
+            forward: true
+          },
+
+          inputMode: 1,
+          playMode: 0,
+          tick: 0,
+
+          delta: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+
+          transaction: null,
+          itemUseTransaction: null,
+          itemStackRequest: null,
+          blockActions: []
+        })
+
+        console.log('🚶 Random movement')
+
+      } catch (e) {
+        console.log(e)
+      }
+    }, config.antiAfk.walkInterval)
+  }
+
+  // Fake combat system
+  if (config.modules.combat) {
+    setInterval(() => {
+      if (!connected) return
+
+      console.log('⚔️ Combat scan active')
+    }, 15000)
+  }
+
+  // Fake avoid mobs system
+  if (config.modules.avoidMobs) {
+    setInterval(() => {
+      if (!connected) return
+
+      console.log('👾 Avoiding nearby mobs')
+    }, 20000)
+  }
+
+  // Fake auto eat
+  if (config.modules.autoEat) {
+    setInterval(() => {
+      if (!connected) return
+
+      console.log('🍖 Checking hunger')
+    }, 25000)
+  }
+}
+
+startBot()
