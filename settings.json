@@ -1,110 +1,90 @@
-const bedrock = require('bedrock-protocol')
-
-const config = {
-  bot: {
-    username: 'SloBoTT0',
-    offline: true
+{
+  "name": "AFK Bot",
+  "bot-account": {
+    "username": "SloBoTT0",
+    "password": "",
+    "type": "offline"
   },
-
-  server: {
-    host: 'Gun2Death.aternos.me',
-    port: 47338
+  "server": {
+    "ip": "Gun2Death.aternos.me",
+    "port": 47338,
+    "version": "",
+    "try-creative": false
   },
-
-  reconnect: {
-    enabled: true,
-    delay: 5000,
-    maxDelay: 120000
+  "position": {
+    "enabled": true,
+    "x": 0,
+    "y": 100,
+    "z": 0
   },
-
-  autoAuth: {
-    enabled: true,
-    password: 'chalol78'
+  "utils": {
+    "auto-auth": {
+      "enabled": true,
+      "password": "chalol78"
+    },
+    "anti-afk": {
+      "enabled": true,
+      "sneak": true
+    },
+    "chat-messages": {
+      "enabled": true,
+      "repeat": true,
+      "repeat-delay": 120,
+      "messages": [
+        "I'm a regular player",
+        "Subscribe to Slobos!",
+        "I like to play Minecraft!"
+      ]
+    },
+    "chat-log": true,
+    "auto-reconnect": true,
+    "auto-reconnect-delay": 2000,
+    "max-reconnect-delay": 120000
   },
-
-  antiAfk: {
-    enabled: true,
-    sneak: true,
-    jumpInterval: 10000,
-    lookInterval: 5000,
-    walkInterval: 3000
+  "movement": {
+    "enabled": true,
+    "circle-walk": {
+      "enabled": true,
+      "radius": 4,
+      "speed": 3000
+    },
+    "look-around": {
+      "enabled": true,
+      "interval": 5000
+    },
+    "random-jump": {
+      "enabled": true,
+      "interval": 10000
+    }
   },
-
-  chat: {
-    enabled: true,
-    repeat: true,
-    delay: 120000,
-    messages: [
-      "I'm a regular player",
-      "Subscribe to Slobos!",
-      "I like to play Minecraft!"
-    ]
+  "modules": {
+    "avoidMobs": true,
+    "combat": true,
+    "beds": false,
+    "chat": true,
+    "console-commands": true
   },
-
-  modules: {
-    avoidMobs: true,
-    combat: true,
-    autoEat: true,
-    chatResponder: true,
-    consoleCommands: true
+  "combat": {
+    "attack-mobs": true,
+    "auto-eat": true
+  },
+  "beds": {
+    "pick-up-day": false,
+    "place-night": false
+  },
+  "discord": {
+    "enabled": false,
+    "webhookUrl": "YOUR_DISCORD_WEBHOOK_URL_HERE",
+    "events": {
+      "connect": true,
+      "disconnect": true,
+      "chat": false
+    }
+  },
+  "chat": {
+    "respond": true
   }
 }
-
-function random(min, max) {
-  return Math.random() * (max - min) + min
-}
-
-function startBot() {
-  console.log('Starting Bedrock AFK Bot...')
-
-  const bot = bedrock.createClient({
-    host: config.server.host,
-    port: config.server.port,
-    username: config.bot.username,
-    offline: config.bot.offline
-  })
-
-  let connected = false
-
-  bot.on('join', () => {
-    connected = true
-    console.log('✅ Bot joined server')
-  })
-
-  bot.on('spawn', () => {
-    console.log('✅ Bot spawned')
-  })
-
-  bot.on('text', (packet) => {
-    try {
-      const msg = packet.message || ''
-
-      console.log('[CHAT]', msg)
-
-      // Auto auth
-      if (config.autoAuth.enabled) {
-        if (
-          msg.toLowerCase().includes('/register')
-        ) {
-          sendChat(`/register ${config.autoAuth.password} ${config.autoAuth.password}`)
-        }
-
-        if (
-          msg.toLowerCase().includes('/login')
-        ) {
-          sendChat(`/login ${config.autoAuth.password}`)
-        }
-      }
-
-      // Chat responder
-      if (config.modules.chatResponder) {
-        if (msg.toLowerCase().includes('hello')) {
-          sendChat('hi')
-        }
-
-        if (msg.toLowerCase().includes(config.bot.username.toLowerCase())) {
-          sendChat('yes?')
-        }
       }
 
     } catch (e) {
